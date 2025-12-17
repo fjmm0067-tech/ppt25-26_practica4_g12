@@ -44,7 +44,7 @@ import java.nio.charset.StandardCharsets;
 public class HttpConnection implements Runnable {
     
     //Parámetros globales del servicio
-    public static final String DOCUMENT_ROOT="./users/";
+    public static final String DOCUMENT_ROOT="./fjmm0067/";
     public static final String DEFAULT_DOCUMENT="/index.html";
     
     public static final int HTTP_1_1_REQUEST_PARAMETERS = 3;
@@ -116,6 +116,18 @@ public class HttpConnection implements Runnable {
                 if(requestedPath.equals("/")){
                     requestedPath = DEFAULT_DOCUMENT;
                 }
+                
+                String hostName = host_field;
+                int colon = hostName.indexOf(':');
+                if(colon >= 0){
+                    hostName = hostName.substring(0, colon);
+                }
+                
+                String relativePath = requestedPath.startsWith("/") ? requestedPath.substring(1) : requestedPath;
+               
+                String finalPath = DOCUMENT_ROOT + hostName + "/" + relativePath;
+                
+                System.out.println("FINAL_PATH=" + finalPath);
                 //TAREA 2. Extraer la ruta y recurso
                 String route;
                 String resource;
@@ -127,6 +139,15 @@ public class HttpConnection implements Runnable {
                 route = requestedPath.substring(0,lastSlash + 1);
                 resource = requestedPath.substring(lastSlash + 1);
                 }
+                String extension = "";
+                int dot = resource.lastIndexOf('.');
+                if (dot >= 0 && dot < resource.length() - 1){
+                    extension = resource.substring(dot + 1).toLowerCase();
+                }
+                    String mimeType = getMimeType(extension);
+                    
+                    System.out.println("ROUTE=" + route + " RESOURCE=" + resource + " EXT=" + extension + " MIME=" + mimeType);
+                
                 System.out.println("METHOD="+ method + "PATH=" + requestedPath + "ROUTE=" + route + "RESOURCE=" + resource + "VERSION=" + version);
                 
                 if(!"GET".equals(method)){
@@ -168,6 +189,30 @@ public class HttpConnection implements Runnable {
     }
     private void sendHtml(DataOutputStream dos, String statusLine, String html) throws IOException{
         sendHtml(dos, statusLine, html, (String[]) null);
+    }
+    private String getMimeType(String ext){
+        switch(ext){
+            case "html":
+            case "htm":
+                return "text/html";
+            case "css":
+                return "text/css";
+            case "js":
+                return "text/javascript";
+            case "txt":
+                return "text/plain";
+            case "png":
+                return "image/png";
+            case "jpg":
+            case "jpeg":
+                return "image/jpeg";
+            case "gif":
+                return "image/gif";
+            case "ico":
+                return "image/x-icon";
+            default:
+                return "application/octet-stream";
+        }
     }
 }
                 
