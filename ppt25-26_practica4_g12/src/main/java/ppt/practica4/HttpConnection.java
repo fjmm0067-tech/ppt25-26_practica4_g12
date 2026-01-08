@@ -125,7 +125,7 @@ public class HttpConnection implements Runnable {
                 
                 String relativePath = requestedPath.startsWith("/") ? requestedPath.substring(1) : requestedPath;
                
-                String finalPath = DOCUMENT_ROOT + hostName + "/" + relativePath;
+                String finalPath = DOCUMENT_ROOT + relativePath;
                 
                 System.out.println("FINAL_PATH=" + finalPath);
                 //TAREA 2. Extraer la ruta y recurso
@@ -155,9 +155,13 @@ public class HttpConnection implements Runnable {
                 return;
                 }
                 
-                String html = "<!DOCTYPE html><html><head><title> Practica 1 </title><meta charset='utf-8'>"+"</head><body><h1> Practica 4 </h1></body></html>";
-                
-                sendHtml(dos, "HTTP/1.1 200 OK", html);
+                try{
+                byte[] body = readResourceBytes(finalPath);
+                sendResource(dos, "HTTP/1.1 200 OK", mimeType, body);
+        }catch(FileNotFoundException e){
+                        sendHtml(dos, "HTTP/1.1 404 Not Found", "<!DOCTYPE html><html><head><meta charset='utf-8'></head>" + "<body><h1>404 Not Found</h1></body></html>");
+                        return;
+                        }
                 
         }catch (IOException ex){
             Logger.getLogger(HttpConnection.class.getName()).log(Level.SEVERE, null, ex);
@@ -170,6 +174,24 @@ public class HttpConnection implements Runnable {
             }
         }
     }
+    
+    private void sendResource(DataOutputStream dos, String statusLine, String contentType, byte[] body, String... extraHeaders)throws IOException{
+   
+    dos.write((statusLine + CRLF).getBytes(StandardCharsets.UTF_8));
+    dos.write(("Connection: close" + CRLF).getBytes(StandardCharsets.UTF_8));
+    dos.write(("Content-Type: " + contentType + CRLF).getBytes(StandardCharsets.UTF_8));
+    
+    if(extraHeaders != null){
+        for(String h : extraHeaders){
+            dos.write((h + CRLF).getBytes(StandardCharsets.UTF_8));
+        }
+    }
+    dos.write(("Content-Length: " + body.length + CRLF).getBytes(StandardCharsets.UTF_8));
+    dos.write((CRLF).getBytes(StandardCharsets.UTF_8));
+    dos.write(body);
+    dos.flush();
+    }
+    
     private void sendHtml(DataOutputStream dos, String statusLine, String html, String... extraHeaders)throws IOException{
         byte[] body = html.getBytes(StandardCharsets.UTF_8);
         
@@ -190,6 +212,32 @@ public class HttpConnection implements Runnable {
     private void sendHtml(DataOutputStream dos, String statusLine, String html) throws IOException{
         sendHtml(dos, statusLine, html, (String[]) null);
     }
+    private byte[] readResourceBytes(String resourcePath) throws IOException{
+        File f = new File(resourcePath);
+        
+        if(!f.exists()|| !f.isFile()){
+            throw new FileNotFoundException(f.getPath());
+        }
+        long len= f.length();
+        if(len > Integer.MAX_VALUE){
+            throw new IOException("File too large: " + len + "bytes");
+        }
+        byte[] data = new byte[(int) len];
+        
+        try(FileInputStream fis = new FileInputStream(f)){
+            int offset = 0;
+            while(offset < data.length){
+                int r = fis.read(data, offset, data.length - offset);
+                if(r == -1) break;
+                offset += r;
+            }
+            if(offset < data.length){
+                throw new IOException("Unexpected EOF: read "+ offset + " of " + data.length);
+            }
+        }
+        return data;
+    }
+    
     private String getMimeType(String ext){
         switch(ext){
             case "html":
@@ -214,6 +262,7 @@ public class HttpConnection implements Runnable {
                 return "application/octet-stream";
         }
     }
+    
 }
                 
               
