@@ -68,7 +68,7 @@ public class MainServer {
             //Si se quiere escuchar en todas las interfaces, se debe usar:
             // InetAddress.getByName("0.0.0.0");
             //.
-            InetAddress serveraddr = InetAddress.getLocalHost();//Se optiene la dirección IP de la máquina
+            InetAddress serveraddr = InetAddress.getByName("0.0.0.0");//Se optiene la dirección IP de la máquina
             
             //-----------------------------------------------------------------
             //Creación del socket servidor
